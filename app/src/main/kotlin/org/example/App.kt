@@ -4,7 +4,6 @@
 package org.example
 
 import java.time.LocalDate
-import java.time.LocalDateTime
 import java.util.*
 import kotlin.collections.HashMap
 
@@ -31,7 +30,7 @@ fun Store.addProduct(product : Product) {
 }
 
 fun Store.contains(productID: Int , quantity : Int = 0) =
-    products.containsKey(productID) && products[productID]!!.quantity > quantity
+    products.containsKey(productID) && products[productID]!!.quantity >= quantity
 
 fun Store.priceOf(productID : Int , quantity : Int = 1) : Double =
     if (!contains(productID)) 0.0
@@ -44,24 +43,6 @@ fun Store.subtract(productID: Int , quantity: Int) {
     if(contains(productID))
         products[productID]!!.quantity -= quantity
 }
-
-//fun Store.priceOf(orderItem: OrderItem) =
-//    products[orderItem.productID].let {
-//        if(it==null)
-//            throw InvalidProductID(orderItem.productID)
-//        it.price
-//    }
-//
-//fun Store.priceOf(order : Order) =
-//    order.items.map{ priceOf(it) }.sum()
-
-
-//operator fun Store.minusAssign(item : OrderItem) {
-//    val product = products[item.productID]
-//    if(product==null)
-//        throw InvalidProductID()
-//    product.quantity -=
-//}
 
 class Order (
     val items : LinkedList<OrderItem> ,
@@ -88,55 +69,15 @@ open class ShippingService {
 
 class Customer(var totalBalance : Double , val orders : LinkedList<Order> = LinkedList())
 
-//class OrderItemError(type : Type , productID: Int) {
-//    enum class Type {
-//        OUT_OF_STOCK,
-//        INSUFFICIENT_BALANCE,
-//    }
-//}
-
 class EmptyOrderError : Exception()
 class InsufficientBalanceError(val requiredMoney : Double , val currentBalance : Double) : Exception()
 class OutOfStockError(val productsID: List<Int>) : Exception()
 class ExpiredError(val productsID: List<Int>) : Exception()
-//class InvalidProductsID(IDs : List<Int>) : Exception()
-
-
-//fun Order.throwIfEmpty() {
-//    if(isEmpty) throw EmptyOrderError()
-//}
-
-//fun throwIfInvalidIDsExist(order : Order , store : Store) =
-//    order.items
-//        .map { it.productID }
-//        .filter { store.products[it]==null }
-//        .apply {
-//            if(isNotEmpty())
-//                throw InvalidProductsID(this)
-//        }
-
-//fun throwIfOutOfStock(order : Order , store : Store) {
-//    throwIfInvalidIDsExist(order,store)
-//    order.items
-//        .filter {
-//            store.products[it.productID]!!.quantity < it.quantity || // OutOfStock
-//            store.products[it.productID]!!.expiryDate?.isBefore(order.date.toLocalDate())?:false // Expired
-//        }
-//        .map {it.productID}
-//        .apply {
-//            if(isNotEmpty())
-//                throw OutOfStockOrExpiredError(this)
-//        }
-//}
-
-//fun Store.priceOf(orderItem: OrderItem) {
-//    products[orderItem.productID]
-//}
 
 fun Order.throwIfInvalid(store : Store) =
     items.apply{
         ifEmpty { throw EmptyOrderError() }
-        filter { !store.contains(it.productID) }
+        filter { !store.contains(it.productID , it.quantity) }
             .apply {
                 if (isNotEmpty()) throw OutOfStockError( map { it.productID } )
             }
@@ -195,7 +136,7 @@ fun main() {
     val order = newOrder(
         OrderItem(0 , 1),
         OrderItem(2 , 1),
-        OrderItem(3 , 11)
+        OrderItem(3 , 10)
     )
 
     try {
